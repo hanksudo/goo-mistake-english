@@ -1,7 +1,6 @@
 @charset "UTF-8";
 .main {
     font-family: 'ＭＳ Ｐゴシック', 'MS PGothic', 'ヒラギノ角ゴ Pro W3', 'Hiragino Kaku Gothic Pro';
-    width: 644px;
     margin: auto;
 }
 
@@ -199,4 +198,10 @@
 
 .content-box-english .content-box-english-in .author {
 	color: #999;
+}
+
+@media screen and (min-width: 644px)  {
+    .main {
+		width: 644px;
+	}
 }
