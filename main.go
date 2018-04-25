@@ -2,8 +2,9 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"crypto/tls"
 	"html/template"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -13,13 +14,26 @@ import (
 	"golang.org/x/net/html"
 )
 
-const baseURL = "http://dictionary.goo.ne.jp"
+const baseURL = "https://dictionary.goo.ne.jp"
 
 var contents []string
 
 func extractArchiveList() []string {
 	var urls []string
-	resp, _ := http.Get(baseURL + "/mistake_english/archive")
+
+	archiveURL := baseURL + "/mistake_english/archive"
+	log.Println("Start extracting archive list from...", archiveURL)
+
+	// user http1
+	http.DefaultClient.Transport = &http.Transport{
+		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+	}
+
+	resp, err := http.Get(archiveURL)
+	if err != nil {
+		log.Printf("%s", err)
+		os.Exit(1)
+	}
 	z := html.NewTokenizer(resp.Body)
 	for {
 		tt := z.Next()
@@ -53,8 +67,9 @@ func f(n *html.Node) {
 		}
 	}
 }
+
 func extractContent(url string) {
-	fmt.Println("Extract content from:", url)
+	log.Println("Extract content from:", url)
 	resp, _ := http.Get(baseURL + url)
 	doc, _ := html.Parse(resp.Body)
 	f(doc)
@@ -62,17 +77,19 @@ func extractContent(url string) {
 
 func main() {
 	urls := extractArchiveList()
-	fmt.Println("Count of pages:", len(urls))
+	log.Println("Count of pages:", len(urls))
+
 	for _, url := range urls {
 		extractContent(url)
 	}
 
-	fmt.Println("Rendering HTML...")
+	log.Println("Rendering HTML...")
 	f, _ := os.Create("index.html")
 	tmpl, _ := template.ParseFiles("index.tmpl")
 	tmpl.Execute(f, struct {
 		Contents template.HTML
 	}{Contents: template.HTML(strings.Join(contents, ""))})
 	f.Close()
-	fmt.Println("Done!")
+
+	log.Println("Done!")
 }
